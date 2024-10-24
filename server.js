@@ -23,39 +23,79 @@ server.get('/newgame',function(req,res){
     res.status(201)
     res.send({sessionID: newID})
 })
+
 server.get('/gamestate', function(req,res){
     sessionID = req.query.sessionID
     gameState = activeSessions[sessionID]
     res.status(200) 
     res.send({gameState: gameState})
 })
+
 server.post('/guess', function(req,res){
     sessionID = req.body.sessionID
     guess = req.body.guess
     gameState = activeSessions[sessionID]
-    console.log(gameState)
     if(gameState.remainingGuesses > 0){
-        answer = gameState.wordToGuess.split("") 
-        attempt = guess.split("")
+        let answer = gameState.wordToGuess.split("") 
+        let attempt = guess.split("")
+        let status = [false,false,false,false,false]
+        let go = true
+        let newguess = [
+            {value:attempt[0], result:''},
+            {value:attempt[1], result:''},
+            {value:attempt[2], result:''},
+            {value:attempt[3], result:''},
+            {value:attempt[4], result:''},
+        ]
         if(answer == attempt){
             console.log("YAYYYYYY")
         } else {
             for(let i=0; i <5;i++){
-                console.log(answer[i] + " ---- "+ attempt[i])
+            
+                // if(gameState.guesses.length >0){
+                //     console.log("lonk")
+                //     if(gameState.guesses[gameState.guesses.length-1][i].result == "RIGHT"){
+                //         go=false
+                //         console.log("canceled" + " --- "+ answer[i] + " -- " + attempt[i])
+                //     }
+                // }
+
+                // if(go==true){
                 if(answer[i] == attempt[i]){
+                    if(gameState.rightLetters.includes(answer[i]) == false){
                     gameState.rightLetters.push(answer[i])
-                } else {
+                    }
+                    newguess[i].result = "RIGHT"
+                    status[i] = true
+                } else {    
                     for(let i2 = 0; i2<5;i2++){
-                        if(answer[i2] == attempt[i2]){
-                            gameState.closeLetters.push(answer[i])
-                        }
+                        if(answer[i2] == attempt[i]){
+                            if(status[i2] == false){
+                                if(gameState.closeLetters.includes(attempt[i]) == false){
+                                    gameState.closeLetters.push(attempt[i])
+                                }
+                                newguess[i].result = "CLOSE"
+                        } 
+                    } else if(newguess[i].result != "CLOSE"){
+                        newguess[i].result = "WRONG"
                     }
                 }
             }
-        }
+        // } else {
+        //     console.log("HELLO")
+        // }
+    }
+    }
+        gameState.remainingGuesses = gameState.remainingGuesses -1
+        gameState.guesses.push(newguess)
         console.log(answer)
         console.log(attempt)
+        console.log(status)
+        console.log("")
+        console.log(newguess)
         console.log(gameState)
+
+
     }
     res.status(201)
 })
