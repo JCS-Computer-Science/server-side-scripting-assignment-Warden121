@@ -35,71 +35,59 @@ server.post('/guess', function(req,res){
     sessionID = req.body.sessionID
     guess = req.body.guess
     gameState = activeSessions[sessionID]
+    let gstatus = [false,false,false,false,false]
     if(gameState.remainingGuesses > 0){
-        let answer = gameState.wordToGuess.split("") 
-        let attempt = guess.split("")
-        let status = [false,false,false,false,false]
-        let go = true
-        let newguess = [
-            {value:attempt[0], result:''},
-            {value:attempt[1], result:''},
-            {value:attempt[2], result:''},
-            {value:attempt[3], result:''},
-            {value:attempt[4], result:''},
-        ]
-        if(answer == attempt){
-            console.log("YAYYYYYY")
-        } else {
+        let answer = gameState.wordToGuess.split('') 
+        let attempt = guess.split('')
+        let newguess = [{value:attempt[0], result:''},{value:attempt[1], result:''},{value:attempt[2], result:''},{value:attempt[3], result:''},{value:attempt[4], result:''},]
+    
             for(let i=0; i <5;i++){
-            
-                // if(gameState.guesses.length >0){
-                //     console.log("lonk")
-                //     if(gameState.guesses[gameState.guesses.length-1][i].result == "RIGHT"){
-                //         go=false
-                //         console.log("canceled" + " --- "+ answer[i] + " -- " + attempt[i])
-                //     }
-                // }
-
-                // if(go==true){
                 if(answer[i] == attempt[i]){
                     if(gameState.rightLetters.includes(answer[i]) == false){
-                    gameState.rightLetters.push(answer[i])
+                        if(gameState.closeLetters.includes(attempt[i]) == false){
+                            gameState.rightLetters.push(answer[i])
+                        } else {
+                            gameState.closeLetters.splice(gameState.closeLetters.indexOf(attempt[i]), 1)
+                            gameState.rightLetters.push(answer[i])
+                        }
                     }
-                    newguess[i].result = "RIGHT"
-                    status[i] = true
+                    newguess[i].result = 'RIGHT'
+                    gstatus[i] = true
                 } else {    
                     for(let i2 = 0; i2<5;i2++){
                         if(answer[i2] == attempt[i]){
-                            if(status[i2] == false){
+                            if(gstatus[i2] == false){
                                 if(gameState.closeLetters.includes(attempt[i]) == false){
-                                    gameState.closeLetters.push(attempt[i])
+                                    if(gameState.rightLetters.includes(answer[i2]) == false) {
+                                        console.log(gameState.rightLetters.includes(answer[i2]))
+                                        gameState.closeLetters.push(attempt[i])
+                                    }
                                 }
-                                newguess[i].result = "CLOSE"
+                                newguess[i].result = 'CLOSE'
                         } 
-                    } else if(newguess[i].result != "CLOSE"){
-                        newguess[i].result = "WRONG"
+                    } else if(newguess[i].result != 'CLOSE'){
+                        newguess[i].result = 'WRONG'
+                    }
+                }
+                if(gameState.wrongLetters.includes(newguess[i].value) == false){
+                    if(gameState.closeLetters.includes(newguess[i].value) == false){
+                        gameState.wrongLetters.push(newguess[i].value)
                     }
                 }
             }
-        // } else {
-        //     console.log("HELLO")
-        // }
-    }
     }
         gameState.remainingGuesses = gameState.remainingGuesses -1
         gameState.guesses.push(newguess)
-        console.log(answer)
-        console.log(attempt)
-        console.log(status)
-        console.log("")
-        console.log(newguess)
-        console.log(gameState)
-
-
     }
-    res.status(201)
-})
+    if(gameState.remainingGuesses <= 0){
+        gameState.gameOver=true
+    }
+    
+    //DO WINCON BASDBASJONDFIOASNF
 
+    res.status(201)
+    res.send({gameState: gameState})
+})
 
 
 
