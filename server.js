@@ -1,4 +1,5 @@
 const express = require("express");
+const { errorMonitor } = require("supertest/lib/test");
 const uuid = require("uuid")
 const server = express();
 server.use(express.json())
@@ -11,7 +12,7 @@ let activeSessions={
 server.get('/newgame',function(req,res){
     let newID = uuid.v4()
     let newgame = {
-        wordToGuess: "stink",
+        wordToGuess: "spike",
         guesses:[],
         wrongLetters: [],
         closeLetters: [], 
@@ -33,14 +34,33 @@ server.get('/gamestate', function(req,res){
 
 server.post('/guess', function(req,res){
     sessionID = req.body.sessionID
-    guess = req.body.guess
+    if(sessionID == undefined){
+        res.status(400)
+        res.send({error: "Bad request"})
+    }
+    guess = req.body.guess.toLowerCase()
     gameState = activeSessions[sessionID]
+    if(gameState == undefined){
+        res.status(404)
+        res.send({error: "Failed"})
+    }
     let gstatus = [false,false,false,false,false]
-    if(gameState.remainingGuesses > 0){
+    if(gameState.remainingGuesses > 0 && gameState.gameOver != true){
         let answer = gameState.wordToGuess.split('') 
         let attempt = guess.split('')
+
+        if(attempt.length != 5){
+            res.status(400)
+            res.send({error: "Invalid length"})
+        }
+        let valid = /[a-z]/
+        for(let i=0;i<5;i++){
+            if(attempt[i].match(valid) == null){
+                res.status(400)
+                res.send({error: "Invalid Character"})
+            }
+        }
         let newguess = [{value:attempt[0], result:''},{value:attempt[1], result:''},{value:attempt[2], result:''},{value:attempt[3], result:''},{value:attempt[4], result:''},]
-    
             for(let i=0; i <5;i++){
                 if(answer[i] == attempt[i]){
                     if(gameState.rightLetters.includes(answer[i]) == false){
@@ -59,7 +79,6 @@ server.post('/guess', function(req,res){
                             if(gstatus[i2] == false){
                                 if(gameState.closeLetters.includes(attempt[i]) == false){
                                     if(gameState.rightLetters.includes(answer[i2]) == false) {
-                                        console.log(gameState.rightLetters.includes(answer[i2]))
                                         gameState.closeLetters.push(attempt[i])
                                     }
                                 }
@@ -74,7 +93,7 @@ server.post('/guess', function(req,res){
                         gameState.wrongLetters.push(newguess[i].value)
                     }
                 }
-            }
+            }  
     }
         gameState.remainingGuesses = gameState.remainingGuesses -1
         gameState.guesses.push(newguess)
@@ -82,9 +101,15 @@ server.post('/guess', function(req,res){
     if(gameState.remainingGuesses <= 0){
         gameState.gameOver=true
     }
-    
-    //DO WINCON BASDBASJONDFIOASNF
-
+    let correct = true
+    for(let i=0; i<5;i++){
+       if(gameState.guesses[gameState.guesses.length-1][i].result == "WRONG" || gameState.guesses[gameState.guesses.length-1][i].result == "CLOSE"){
+        correct = false
+       }
+    }
+    if(correct == true){
+        gameState.gameOver = true
+    }
     res.status(201)
     res.send({gameState: gameState})
 })
