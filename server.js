@@ -11,8 +11,15 @@ let activeSessions={
 
 server.get('/newgame',function(req,res){
     let newID = uuid.v4()
+    let word = ""
+    if(req.query.answer == undefined){
+        word="stink"
+    } else{
+        word = req.query.answer
+    }
+    
     let newgame = {
-        wordToGuess: "spike",
+        wordToGuess: word,
         guesses:[],
         wrongLetters: [],
         closeLetters: [], 
@@ -21,13 +28,49 @@ server.get('/newgame',function(req,res){
         gameOver: false
     }
     activeSessions[newID]= newgame
+
+
+//     let apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${newgame.wordToGuess}`;
+//     fetch(apiUrl)
+//     .then(response => {
+//     if (!response.ok) {
+//     }
+//     return response.json();
+//   })
+//   .then(data => {
+//     if(data.title != undefined){
+//         nuhuh()
+//     }
+//   })
+//     function nuhuh(){
+//         console.log("hello?")
+//         res.status(400)
+//         res.send({error: "Invalid Word"})
+//     }
+
     res.status(201)
     res.send({sessionID: newID})
 })
 
+
+
+
+
+
+
+
+
 server.get('/gamestate', function(req,res){
     sessionID = req.query.sessionID
+    if(sessionID == undefined){
+        res.status(400)
+        res.send({error: "Bad request"})
+    }
     gameState = activeSessions[sessionID]
+    if(gameState == undefined){
+        res.status(404)
+        res.send({error: "Failed"})
+    }
     res.status(200) 
     res.send({gameState: gameState})
 })
@@ -112,6 +155,44 @@ server.post('/guess', function(req,res){
     }
     res.status(201)
     res.send({gameState: gameState})
+})
+
+server.delete('/reset', function(req,res){
+    sessionID = req.query.sessionID
+    if(sessionID == undefined){
+        res.status(400)
+        res.send({error: "Bad request"})
+    }
+    gameState = activeSessions[sessionID]
+    if(gameState == undefined){
+        res.status(404)
+        res.send({error: "Failed"})
+    }
+    gameState.wordToGuess=undefined
+    gameState.guesses=[]
+    gameState.wrongLetters=[]
+    gameState.closeLetters=[]
+    gameState.rightLetters=[]
+    gameState.remainingGuesses=6
+    gameState.gameOver=false
+
+    res.status(200) 
+    res.send({gameState: gameState})
+})
+server.delete('/delete', function(req,res){
+    sessionID = req.query.sessionID
+    if(sessionID == undefined){
+        res.status(400)
+        res.send({error: "Bad request"})
+    }
+    gameState = activeSessions[sessionID]
+    if(gameState == undefined){
+        res.status(404)
+        res.send({error: "Failed"})
+    }
+    activeSessions[sessionID]=undefined
+    res.status(204) 
+    res.send({})
 })
 
 
