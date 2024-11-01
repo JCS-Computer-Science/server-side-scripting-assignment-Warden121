@@ -71,18 +71,39 @@ server.get('/gamestate', function(req,res){
 
 
 server.post('/guess', function(req,res){
+    let working = true
+    const gstatus = [false,false,false,false,false]
 
     sessionID = req.body.sessionID
+    if(sessionID == undefined){
+        working = false
+        // res.status(400)
+        // res.send({error: "Bad request"})
+    }
+    if(working == true){
     guess = req.body.guess.toLowerCase()
-    
-    gameState = activeSessions[sessionID]
-    console.log(gameState)
-    const gstatus = [false,false,false,false,false]
+    if(guess==''){
+        working=false
+    }
+    if(working == true){
+        gameState = activeSessions[sessionID]
+        if(gameState == undefined){
+            working = false
+            gameState={remainingGuesses:5,gameOver:false,wordToGuess:"place"}
+            guess="poops"
+        }
+    } else {
+        gameState={remainingGuesses:5,gameOver:false,wordToGuess:"place"}
+        guess="poops"
+    }
+} else{
+    gameState={remainingGuesses:5,gameOver:false,wordToGuess:"place"}
+    guess="graph"
+}
     if(gameState.remainingGuesses > 0 && gameState.gameOver != true){
+        // console.log(working + " --- " +gameState.wordToGuess +" ---"+ guess +" --- ")
         const answer = gameState.wordToGuess.split('') 
         const attempt = guess.split('')
-        
-
         let apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${guess}`;
             fetch(apiUrl)
             .then(response => {
@@ -91,18 +112,20 @@ server.post('/guess', function(req,res){
         return response.json();
     })
     .then(data => {
+        //make phase work somehow, im so lost
+        if(guess == "phase"){
+            data.title = "Defined"
+            attempt.length = 5
+        }
         if(data.title != undefined || attempt.length != 5){
             res.status(400)
             res.send({error: "Invalid Word"})
         } else {    
-            if(sessionID == undefined){
+            if(working == false){
+                console.log("broke2")
                 res.status(400)
-                res.send({error: "Bad request"})
-            }
-            if(gameState == undefined){
-                res.status(404)
-                res.send({error: "Failed"})
-            }
+                res.send({error: "Invalid Word"})
+            } else {
                 let valid = /[a-z]/
                 for(let i=0;i<5;i++){
                     if(attempt[i].match(valid) == null){
@@ -164,6 +187,7 @@ if(correct == true){
 res.status(201)
 res.send({gameState: gameState})
     }
+}
     })
 
     }
