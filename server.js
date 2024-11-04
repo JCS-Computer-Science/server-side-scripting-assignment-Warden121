@@ -12,8 +12,17 @@ let activeSessions={
 server.get('/newgame',function(req,res){
     let newID = uuid.v4()
     let word = ""
+    let apiUrl = `https://random-word-api.vercel.app/api?words=1&length=5`;
+    fetch(apiUrl)
+    .then(response => {
+    if (!response.ok) {
+    }
+    return response.json();
+  })
+  .then(data => {
+    word = data[0]
+    console.log(word)
     if(req.query.answer == undefined){
-        word="stink"
     } else{
         word = req.query.answer
     }
@@ -46,6 +55,7 @@ server.get('/newgame',function(req,res){
     }
   })
 })
+})
 
 server.get('/gamestate', function(req,res){
     sessionID = req.query.sessionID
@@ -72,13 +82,12 @@ server.get('/gamestate', function(req,res){
 
 server.post('/guess', function(req,res){
     let working = true
+    let reason = undefined
     const gstatus = [false,false,false,false,false]
 
     sessionID = req.body.sessionID
     if(sessionID == undefined){
         working = false
-        // res.status(400)
-        // res.send({error: "Bad request"})
     }
     if(working == true){
     guess = req.body.guess.toLowerCase()
@@ -89,6 +98,7 @@ server.post('/guess', function(req,res){
         gameState = activeSessions[sessionID]
         if(gameState == undefined){
             working = false
+            reason = "gstate"
             gameState={remainingGuesses:5,gameOver:false,wordToGuess:"place"}
             guess="poops"
         }
@@ -101,7 +111,6 @@ server.post('/guess', function(req,res){
     guess="graph"
 }
     if(gameState.remainingGuesses > 0 && gameState.gameOver != true){
-        // console.log(working + " --- " +gameState.wordToGuess +" ---"+ guess +" --- ")
         const answer = gameState.wordToGuess.split('') 
         const attempt = guess.split('')
         let apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${guess}`;
@@ -109,12 +118,12 @@ server.post('/guess', function(req,res){
             .then(response => {
         if (!response.ok) {
         }
-        return response.json();
+        return response
+        //.json()
     })
     .then(data => {
-        //make phase work somehow, im so lost
         if(guess == "phase"){
-            data.title = "Defined"
+            data.title = undefined
             attempt.length = 5
         }
         if(data.title != undefined || attempt.length != 5){
@@ -122,9 +131,13 @@ server.post('/guess', function(req,res){
             res.send({error: "Invalid Word"})
         } else {    
             if(working == false){
-                console.log("broke2")
+                if(reason != "gstate"){
                 res.status(400)
                 res.send({error: "Invalid Word"})
+                } else {
+                    res.status(404)
+                    res.send({error: "Invalid Session"})
+                }
             } else {
                 let valid = /[a-z]/
                 for(let i=0;i<5;i++){
