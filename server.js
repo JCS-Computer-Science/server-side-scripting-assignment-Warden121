@@ -21,23 +21,12 @@ server.get('/newgame',function(req,res){
   })
   .then(data => {
     word = data[0]
-    console.log(word)
     if(req.query.answer == undefined){
     } else{
         word = req.query.answer
     }
-    
-    let newgame = {
-        wordToGuess: word,
-        guesses:[],
-        wrongLetters: [],
-        closeLetters: [], 
-        rightLetters: [],
-        remainingGuesses: 6,
-        gameOver: false
-    }
+    let newgame = { wordToGuess: word,guesses:[],wrongLetters: [],closeLetters: [], rightLetters: [],remainingGuesses: 6,gameOver: false}
     activeSessions[newID]= newgame
-
     let apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${newgame.wordToGuess}`;
     fetch(apiUrl)
     .then(response => {
@@ -46,6 +35,7 @@ server.get('/newgame',function(req,res){
     return response.json();
   })
   .then(data => {
+    console.log(word)
     if(data.title != undefined || word.split('').length != 5){
     res.status(400)
     res.send({error: "Invalid Word"})
@@ -66,25 +56,18 @@ server.get('/gamestate', function(req,res){
     gameState = activeSessions[sessionID]
     if(gameState == undefined){
         res.status(404)
-        res.send({error: "Failed"})
+        res.send({error: "Failed"}) 
     }
+    let gameState2 = JSON.parse(JSON.stringify(gameState))
+    gameState2.wordToGuess = undefined
     res.status(200) 
-    res.send({gameState: gameState})
+    res.send({gameState: gameState2})
 })
-
-
-
-
-
-
-
-
 
 server.post('/guess', function(req,res){
     let working = true
     let reason = undefined
     const gstatus = [false,false,false,false,false]
-
     sessionID = req.body.sessionID
     if(sessionID == undefined){
         working = false
@@ -99,15 +82,15 @@ server.post('/guess', function(req,res){
         if(gameState == undefined){
             working = false
             reason = "gstate"
-            gameState={remainingGuesses:5,gameOver:false,wordToGuess:"place"}
+            gameState={remainingGuesses:5,gameOver:false,wordToGuess:"graph"}
             guess="poops"
         }
     } else {
-        gameState={remainingGuesses:5,gameOver:false,wordToGuess:"place"}
+        gameState={remainingGuesses:5,gameOver:false,wordToGuess:"graph"}
         guess="poops"
     }
 } else{
-    gameState={remainingGuesses:5,gameOver:false,wordToGuess:"place"}
+    gameState={remainingGuesses:5,gameOver:false,wordToGuess:"graph"}
     guess="graph"
 }
     if(gameState.remainingGuesses > 0 && gameState.gameOver != true){
@@ -146,7 +129,6 @@ server.post('/guess', function(req,res){
                             res.send({error: "Invalid Character"})
                         }
                     }
-
   let newguess = [{value:attempt[0], result:''},{value:attempt[1], result:''},{value:attempt[2], result:''},{value:attempt[3], result:''},{value:attempt[4], result:''},]
       for(let i=0; i <5;i++){
           if(answer[i] == attempt[i]){
@@ -197,21 +179,15 @@ for(let i=0; i<5;i++){
 if(correct == true){
   gameState.gameOver = true
 }
+let gameState2 = JSON.parse(JSON.stringify(gameState))
+gameState2.wordToGuess = undefined
 res.status(201)
-res.send({gameState: gameState})
+res.send({gameState: gameState2})
     }
 }
     })
-
     }
 })
-
-
-
-
-
-
-
 
 server.delete('/reset', function(req,res){
     sessionID = req.query.sessionID
@@ -232,9 +208,12 @@ server.delete('/reset', function(req,res){
     gameState.remainingGuesses=6
     gameState.gameOver=false
 
+    let gameState2 = JSON.parse(JSON.stringify(gameState))
+    gameState2.wordToGuess = undefined
     res.status(200) 
-    res.send({gameState: gameState})
+    res.send({gameState: gameState2})
 })
+
 server.delete('/delete', function(req,res){
     sessionID = req.query.sessionID
     if(sessionID == undefined){
