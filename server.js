@@ -5,9 +5,7 @@ const server = express();
 server.use(express.json())
 server.use(express.static('public'))
 
-let activeSessions={
-
-}
+let activeSessions={}
 
 server.get('/newgame',function(req,res){
     let newID = uuid.v4()
@@ -102,7 +100,6 @@ server.post('/guess', function(req,res){
         if (!response.ok) {
         }
         return response
-        //.json()
     })
     .then(data => {
         if(guess == "phase"){
@@ -228,6 +225,43 @@ server.delete('/delete', function(req,res){
     activeSessions[sessionID]=undefined
     res.status(204) 
     res.send({})
+})
+
+server.get('/hint', function(req,res){
+    sessionID = req.query.sessionID
+    let working = true
+    let word =""
+    let code =""
+    if(sessionID == undefined){
+        working = false
+        code=400
+    }
+    gameState = activeSessions[sessionID]
+    if(gameState == undefined){ 
+        working = false
+        code=404
+    }
+    if(working == true){
+    word = gameState.wordToGuess
+    } else {
+    word ="poops"
+    }
+let apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
+    fetch(apiUrl)
+    .then(response => {
+    if (!response.ok) {
+    }
+    return response.json()
+    })
+    .then(data => {
+    if(working == false){
+        res.status(code)
+        res.send({error: "Failed"}) 
+    } else {
+        res.status(200)
+        res.send({result:"The definition is : "+data[0].meanings[0].definitions[0].definition})
+    }
+     })
 })
 
 module.exports = server;

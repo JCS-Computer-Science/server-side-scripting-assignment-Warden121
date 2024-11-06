@@ -30,10 +30,21 @@
   <div>
     <button onclick="resetGame()">Reset Game</button>
     <button onclick="deleteGame()">Delete Game</button>
+    <button onclick="getHint()">Get Hint</button>
   </div>
 
   <script>
     let sessionID = undefined;
+
+    async function getHint() {
+      const res = await fetch(`/hint?sessionID=${sessionID}`);
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.result)
+      } else {
+        alert(data.error);
+      }
+    }
 
     async function fetchGameState() {
       const res = await fetch(`/gamestate?sessionID=${sessionID}`);
